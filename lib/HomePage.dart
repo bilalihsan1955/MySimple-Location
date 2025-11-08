@@ -22,7 +22,7 @@ class _StateHalamanBeranda extends State<HalamanBeranda> {
   final MapController _pengontrolPeta = MapController();
   LatLng? _posisiSaatIni;
   String _status = 'Mendapatkan lokasi...';
-  bool _sedangMemuat = false;
+  bool _sedangMemuat = true;
 
   @override
   void initState() {
@@ -163,23 +163,10 @@ class _StateHalamanBeranda extends State<HalamanBeranda> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: _sedangMemuat && _posisiSaatIni == null
-                        ? Skeletonizer(
-                            enabled: true,
-                            child: Container(
-                              color: Colors.grey.shade200,
-                            ),
-                          )
-                        : _posisiSaatIni == null
-                        ? Center(
-                            child: Text(
-                              'Mendapatkan lokasi...',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          )
-                        : Skeletonizer(
-                            enabled: _sedangMemuat,
-                            child: FlutterMap(
+                    child: Skeletonizer(
+                      enabled: _sedangMemuat,
+                      child: _posisiSaatIni != null
+                          ? FlutterMap(
                               mapController: _pengontrolPeta,
                               options: MapOptions(
                                 initialCenter: _posisiSaatIni!,
@@ -195,22 +182,36 @@ class _StateHalamanBeranda extends State<HalamanBeranda> {
                                 ),
 
                                 // Marker jika ada lokasi
-                                if (_posisiSaatIni != null)
-                                  MarkerLayer(
-                                    markers: [
-                                      Marker(
-                                        point: _posisiSaatIni!,
-                                        child: Icon(
-                                          Icons.location_pin,
-                                          color: Color(0xFFEF0000),
-                                          size: 40,
-                                        ),
+                                MarkerLayer(
+                                  markers: [
+                                    Marker(
+                                      point: _posisiSaatIni!,
+                                      child: Icon(
+                                        Icons.location_pin,
+                                        color: Color(0xFFEF0000),
+                                        size: 40,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          : FlutterMap(
+                              mapController: _pengontrolPeta,
+                              options: MapOptions(
+                                initialCenter: LatLng(0, 0),
+                                initialZoom: 2.0,
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate:
+                                      'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.app',
+                                  subdomains: ['a', 'b', 'c'],
+                                ),
                               ],
                             ),
-                          ),
+                    ),
                   ),
                 ),
               ),
