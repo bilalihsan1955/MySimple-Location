@@ -168,30 +168,6 @@ class _StateHalamanBeranda extends State<HalamanBeranda> {
                             enabled: true,
                             child: Container(
                               color: Colors.grey.shade200,
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 200,
-                                      height: 200,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    SizedBox(height: 16),
-                                    Container(
-                                      width: 150,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
                           )
                         : _posisiSaatIni == null
