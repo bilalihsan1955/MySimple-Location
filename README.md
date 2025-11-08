@@ -99,15 +99,16 @@ sertikom_aplikasi_lokasi/
 - **Digunakan di:** `RiwayatLokasiPage.dart` untuk format tanggal
 
 ### 7. **skeletonizer (^2.1.0)**
-**Kegunaan:** Library untuk menampilkan efek loading skeleton
+**Kegunaan:** Library untuk menampilkan efek loading skeleton dengan animasi
 - **Fungsi Utama:**
-  - `Skeletonizer(enabled: true)` - Menampilkan efek skeleton saat loading
-- **Digunakan di:** `HomePage.dart` untuk loading state
+  - `Skeletonizer(enabled: _sedangMemuat)` - Menampilkan efek skeleton saat loading
+  - Memberikan animasi skeleton yang konsisten pada map dan text status
+- **Digunakan di:** `HomePage.dart` untuk loading state pada peta dan text koordinat
 
 ### 8. **google_fonts (^6.3.2)**
-**Kegunaan:** Library untuk menggunakan font Google (Roboto)
+**Kegunaan:** Library untuk menggunakan font Google (Poppins)
 - **Fungsi Utama:**
-  - `GoogleFonts.robotoTextTheme()` - Menerapkan tema font Roboto
+  - `GoogleFonts.poppinsTextTheme()` - Menerapkan tema font Poppins
 - **Digunakan di:** `main.dart` untuk tema aplikasi
 
 ---
@@ -250,9 +251,10 @@ _perbaruiLokasi() [Otomatis dipanggil]
 
 **Detail Proses:**
 1. Fungsi `main()` dijalankan → Memanggil `runApp(Myapp())`
-2. `Myapp` membuat `MaterialApp` dengan tema dan halaman awal
+2. `Myapp` membuat `MaterialApp` dengan tema Poppins dan halaman awal
 3. `HalamanBeranda` dibuat dan `initState()` dipanggil
-4. `initState()` secara otomatis memanggil `_perbaruiLokasi()`
+4. `_sedangMemuat` diinisialisasi sebagai `true` → Skeleton animasi langsung muncul
+5. `initState()` secara otomatis memanggil `_perbaruiLokasi()`
 
 ---
 
@@ -263,7 +265,9 @@ User menekan tombol "Dapatkan Lokasi"
   ↓
 _perbaruiLokasi() dipanggil
   ↓
-setState(_sedangMemuat = true) [Tampilkan loading]
+setState(_sedangMemuat = true) [Aktifkan Skeletonizer animasi]
+  ↓
+Skeletonizer memberikan animasi loading pada peta dan text
   ↓
 Cek Permission (Geolocator.checkPermission())
   ├─ Jika DENIED → Request Permission
@@ -277,17 +281,22 @@ Cek GPS Aktif (Geolocator.isLocationServiceEnabled())
   ↓
 Ambil Lokasi (Geolocator.getCurrentPosition())
   ↓
-setState() [Update _posisiSaatIni dan _status]
+setState(_sedangMemuat = false) [Nonaktifkan Skeletonizer]
+  ↓
+Skeletonizer animasi fade out, konten muncul dengan smooth transition
   ↓
 Pindahkan Kamera Peta (_pengontrolPeta.move())
   ↓
-Tampilkan di Layar [Koordinat + Peta + Marker]
+Tampilkan di Layar [Koordinat + Peta + Marker dengan animasi]
 ```
 
 **Parameter yang Digunakan:**
 - `desiredAccuracy: LocationAccuracy.high` - Akurasi tinggi untuk GPS
-- `initialZoom: 15.0` - Level zoom peta (15 = street level)
-- `posisiBaru` - Koordinat baru (LatLng)
+- `initialZoom: 15.0` - Level zoom peta saat lokasi didapat (15 = street level)
+- `initialZoom: 2.0` - Level zoom peta saat awal aplikasi (2 = world view)
+- `initialCenter: LatLng(0, 0)` - Koordinat default saat awal aplikasi
+- `posisiBaru` - Koordinat baru (LatLng) dari GPS
+- `_sedangMemuat` - Flag untuk mengaktifkan/nonaktifkan Skeletonizer
 
 ---
 
@@ -358,9 +367,13 @@ Tampilkan ListView dengan data lokasi
 
 **Format Tampilan:**
 - Setiap item menampilkan:
+  - Icon dengan RadialGradient (orange ke merah)
   - Nomor lokasi (Lokasi 1, Lokasi 2, dst)
-  - Koordinat (Latitude, Longitude)
-  - Tanggal & waktu disimpan (format: "15 Jan 2024, 10:30")
+  - Koordinat (Latitude, Longitude) dengan ikon my_location
+  - Tanggal & waktu disimpan (format: "15 Jan 2024, 10:30") dengan ikon access_time
+  - Tombol hapus dengan dialog konfirmasi
+  - Icon arrow (visual only)
+- Container dengan shadow dan border radius untuk setiap item
 
 ---
 
@@ -398,22 +411,30 @@ Tampilkan Snackbar Sukses
 - `Myapp` - Widget root aplikasi (StatelessWidget)
 - `MaterialApp` - Widget untuk konfigurasi aplikasi Material Design
   - `title` - Judul aplikasi
-  - `theme` - Tema aplikasi (menggunakan Google Fonts Roboto)
+  - `theme` - Tema aplikasi (menggunakan Google Fonts Poppins)
   - `home` - Halaman awal aplikasi
 
 ### **2. HomePage.dart**
 **Fungsi:** Halaman utama aplikasi
-- Menampilkan peta interaktif
-- Tombol "Dapatkan Lokasi" - Memperbarui lokasi GPS
-- Tombol "Simpan Lokasi" - Menyimpan lokasi saat ini
-- Tombol "Riwayat Lokasi" - Navigasi ke halaman riwayat
-- Menampilkan koordinat (Latitude & Longitude)
+- Menampilkan peta interaktif dengan animasi skeleton loading
+- Tombol "Riwayat Lokasi" - Navigasi ke halaman riwayat (Container dengan InkWell)
+- Tombol "Dapatkan Lokasi" - Memperbarui lokasi GPS (Container dengan gradient RadialGradient)
+- Tombol "Simpan Lokasi" - Menyimpan lokasi saat ini (Container dengan border merah)
+- Menampilkan koordinat (Latitude & Longitude) dengan animasi skeleton
+- Menggunakan Skeletonizer untuk animasi loading yang konsisten
+- Tema warna merah (`Color(0xFFEF0000)`) untuk AppBar dan tombol
 
 ### **3. RiwayatLokasiPage.dart**
 **Fungsi:** Halaman daftar lokasi tersimpan
-- Menampilkan semua lokasi yang sudah disimpan
-- Tombol hapus untuk setiap item
-- Menampilkan informasi lokasi (nomor, koordinat, tanggal)
+- Menampilkan semua lokasi yang sudah disimpan dalam ListView
+- Setiap item memiliki:
+  - Icon dengan RadialGradient (orange ke merah)
+  - Informasi lokasi (nomor, koordinat, tanggal)
+  - Tombol hapus dengan dialog konfirmasi
+  - Icon arrow (tidak berfungsi, hanya visual)
+- Tidak ada pull to refresh
+- Tidak ada navigasi ke halaman detail
+- Loading indicator saat memuat data
 
 ### **4. models/lokasi_tersimpan.dart**
 **Fungsi:** Model data untuk lokasi tersimpan
@@ -425,8 +446,21 @@ Tampilkan Snackbar Sukses
 **Fungsi:** Service untuk operasi CRUD data lokasi
 - `simpanLokasi()` - Menyimpan lokasi baru
 - `ambilLokasiTersimpan()` - Membaca semua lokasi
+- `ambilLokasiTersimpanSinkron()` - Membaca lokasi secara sinkron (untuk internal)
 - `hapusLokasi()` - Menghapus lokasi berdasarkan ID
+- `hapusSemuaLokasi()` - Menghapus semua lokasi tersimpan
 - Menggunakan SharedPreferences sebagai database lokal
+- Key penyimpanan: `'lokasi_tersimpan'`
+
+### **6. widget/layanan_snackbar_atas.dart**
+**Fungsi:** Widget snackbar kustom dengan animasi dari atas
+- `tampilkan()` - Menampilkan snackbar dengan parameter kustom
+- `tampilkanSukses()` - Snackbar hijau untuk pesan sukses
+- `tampilkanError()` - Snackbar merah untuk pesan error
+- `tampilkanInfo()` - Snackbar biru untuk pesan informasi
+- `tampilkanPeringatan()` - Snackbar orange untuk pesan peringatan
+- Fitur: Animasi slide dari atas, fade in/out, swipe to dismiss
+- Parameter: `onpressed`, `onclosed`, `onswap`
 
 ---
 
@@ -462,6 +496,17 @@ File `AndroidManifest.xml` terletak di `android/app/src/main/AndroidManifest.xml
 - Memungkinkan aplikasi mengakses lokasi melalui jaringan (WiFi, seluler)
 - Akurasi lebih rendah dibanding GPS tapi lebih cepat
 - Digunakan sebagai fallback jika GPS tidak tersedia
+
+---
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+**Penjelasan:**
+- **Izin Akses Internet**
+- Memungkinkan aplikasi mengakses internet untuk menampilkan tile peta
+- Diperlukan untuk mengunduh tile peta dari OpenStreetMap server
+- Tanpa izin ini, peta tidak akan bisa ditampilkan
 
 ---
 
@@ -562,19 +607,27 @@ File `AndroidManifest.xml` terletak di `android/app/src/main/AndroidManifest.xml
 
 1. **Aplikasi Dimulai**
    - `main()` dipanggil → `Myapp` dibuat → `HalamanBeranda` dimuat
+   - `_sedangMemuat = true` → Skeletonizer animasi langsung aktif
+   - Peta menampilkan skeleton loading dengan animasi
+   - Text status menampilkan skeleton loading dengan animasi
    - `initState()` otomatis memanggil `_perbaruiLokasi()`
 
 2. **Proses Mendapatkan Lokasi**
+   - Skeletonizer memberikan animasi loading pada peta dan text
    - Aplikasi mengecek izin lokasi
    - Jika belum ada, meminta izin ke pengguna
    - Mengecek apakah GPS aktif
    - Mengambil koordinat GPS
-   - Menampilkan di peta dan teks status
+   - `_sedangMemuat = false` → Skeletonizer animasi fade out
+   - Konten peta dan text muncul dengan smooth transition
 
 3. **Tampilan Awal**
-   - Peta menampilkan lokasi pengguna dengan marker merah
+   - Peta menampilkan lokasi pengguna dengan marker merah (`Color(0xFFEF0000)`)
    - Teks koordinat ditampilkan di bawah peta
-   - Tiga tombol tersedia: Riwayat Lokasi, Dapatkan Lokasi, Simpan Lokasi
+   - Tiga tombol tersedia:
+     - **Riwayat Lokasi**: Container putih dengan InkWell
+     - **Dapatkan Lokasi**: Container dengan RadialGradient (orange ke merah)
+     - **Simpan Lokasi**: Container putih dengan border merah
 
 ---
 
@@ -695,19 +748,38 @@ Data disimpan dalam format JSON string di SharedPreferences:
 ## 🎨 UI/UX Features
 
 ### **Loading States:**
-- Skeleton loading saat memuat lokasi pertama kali
-- CircularProgressIndicator saat memuat riwayat
-- Status text yang informatif
+- **Skeletonizer animasi** pada peta dan text status saat memuat lokasi
+- Animasi skeleton yang konsisten saat aplikasi dibuka dan saat refresh
+- CircularProgressIndicator saat memuat riwayat lokasi
+- Status text yang informatif dengan animasi skeleton
+
+### **Tema Warna:**
+- **Warna Utama**: Merah (`Color(0xFFEF0000)`)
+  - AppBar title dan icon
+  - Marker lokasi di peta
+  - Border tombol "Simpan Lokasi"
+- **Gradient**: RadialGradient (orange ke merah) pada:
+  - Tombol "Dapatkan Lokasi"
+  - Icon lokasi di halaman riwayat
+- **Background**: Putih (`Color(0xFFFCFCFC)`)
 
 ### **Feedback Visual:**
-- Snackbar untuk notifikasi sukses/error
-- Ripple effect pada tombol
-- Smooth animations
+- **Top Snackbar** dengan animasi slide dari atas untuk notifikasi
+- Ripple effect pada tombol dengan borderRadius
+- Smooth skeleton animations
+- Fade transition pada konten
+
+### **Tombol dan Container:**
+- Semua tombol menggunakan Container dengan Material dan InkWell
+- Tombol "Dapatkan Lokasi": Gradient RadialGradient dengan warna putih
+- Tombol "Simpan Lokasi": Putih dengan border merah
+- Tombol "Riwayat Lokasi": Container putih dengan InkWell
 
 ### **Responsive Design:**
 - Layout menyesuaikan ukuran layar
 - SafeArea untuk menghindari notch/status bar
 - Padding dan margin yang konsisten
+- Border radius 12px untuk konsistensi
 
 ---
 
@@ -735,14 +807,23 @@ Data disimpan dalam format JSON string di SharedPreferences:
 1. **Permission Lokasi:**
    - Aplikasi memerlukan izin lokasi untuk berfungsi
    - Pastikan GPS aktif di device untuk akurasi terbaik
+   - Permission diminta secara runtime saat pertama kali aplikasi mencoba mendapatkan lokasi
 
-2. **Penyimpanan Data:**
-   - Data disimpan lokal di device
+2. **Permission Internet:**
+   - Aplikasi memerlukan izin internet untuk menampilkan tile peta
+   - Tile peta diunduh dari OpenStreetMap server
+   - Tanpa internet, peta tidak akan muncul (tile tidak terunduh)
+   - Koordinat GPS tetap bisa didapat tanpa internet
+
+3. **Penyimpanan Data:**
+   - Data disimpan lokal di device menggunakan SharedPreferences
    - Data akan hilang jika aplikasi di-uninstall
+   - Format penyimpanan: JSON string dengan key `'lokasi_tersimpan'`
 
-3. **Internet:**
-   - Diperlukan koneksi internet untuk menampilkan peta (tile server)
-   - Tidak diperlukan untuk mendapatkan koordinat GPS
+4. **Animasi Skeleton:**
+   - Skeletonizer memberikan animasi loading yang konsisten
+   - Animasi muncul saat aplikasi dibuka dan saat refresh lokasi
+   - Menggunakan `_sedangMemuat` flag untuk mengontrol animasi
 
 ---
 
@@ -756,7 +837,9 @@ Data disimpan dalam format JSON string di SharedPreferences:
 ### **Masalah: Peta tidak muncul**
 **Solusi:**
 - Pastikan koneksi internet aktif
-- Cek apakah tile server dapat diakses
+- Cek apakah tile server OpenStreetMap dapat diakses
+- Pastikan permission INTERNET sudah diberikan
+- Cek URL tile server: `https://tile.openstreetmap.fr/hot/`
 
 ### **Masalah: Lokasi tidak akurat**
 **Solusi:**
@@ -772,6 +855,31 @@ Data disimpan dalam format JSON string di SharedPreferences:
 - [Geolocator Package](https://pub.dev/packages/geolocator)
 - [Shared Preferences](https://pub.dev/packages/shared_preferences)
 - [Flutter Map](https://pub.dev/packages/flutter_map)
+
+---
+
+## 📌 Informasi Teknis Tambahan
+
+### **Tema dan Styling:**
+- **Font**: Poppins (Google Fonts)
+- **Warna Primary**: `Color(0xFFEF0000)` (Merah)
+- **Background**: `Color(0xFFFCFCFC)` (Putih)
+- **Gradient**: RadialGradient dengan warna orange ke merah
+
+### **Animasi:**
+- **Skeletonizer**: Animasi loading skeleton pada peta dan text
+- **Top Snackbar**: Animasi slide dari atas dengan fade transition
+- **Smooth Transitions**: Fade in/out pada konten
+
+### **Struktur Data:**
+- Model: `LokasiTersimpan` dengan 4 field (id, latitude, longitude, disimpanPada)
+- Penyimpanan: JSON string di SharedPreferences
+- Format tanggal: ISO 8601 untuk penyimpanan, format Indonesia untuk tampilan
+
+### **Fitur yang Tidak Digunakan:**
+- ❌ Pull to refresh di halaman riwayat (sudah dihapus)
+- ❌ Halaman detail lokasi (sudah dihapus)
+- ❌ Geocoding untuk reverse geocoding (plugin terpasang tapi tidak digunakan)
 
 ---
 
