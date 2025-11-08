@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class LayananSnackbarAtas {
+class TopSnackbar {
   static void tampilkan(
     BuildContext context, {
     required String pesan,

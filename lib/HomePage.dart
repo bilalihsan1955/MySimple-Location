@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:sertikom_aplikasi_lokasi/widget/top_snackbar.dart';
 import 'package:uuid/uuid.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'models/lokasi_tersimpan.dart';
 import 'services/penyimpanan_lokasi.dart';
-import 'widget/layanan_snackbar_atas.dart';
+import 'widget/top_snackbar.dart';
 import 'RiwayatLokasiPage.dart';
 
-class HalamanBeranda extends StatefulWidget {
-  const HalamanBeranda({super.key, required this.judul});
+class Homepage extends StatefulWidget {
+  const Homepage({super.key, required this.judul});
 
   final String judul;
 
   @override
-  State<HalamanBeranda> createState() => _StateHalamanBeranda();
+  State<Homepage> createState() => _StateHomepage();
 }
 
-class _StateHalamanBeranda extends State<HalamanBeranda> {
+class _StateHomepage extends State<Homepage> {
   final MapController _pengontrolPeta = MapController();
   LatLng? _posisiSaatIni;
   String _status = 'Mendapatkan lokasi...';
@@ -89,7 +90,7 @@ class _StateHalamanBeranda extends State<HalamanBeranda> {
 
   Future<void> _simpanLokasi() async {
     if (_posisiSaatIni == null) {
-      LayananSnackbarAtas.tampilkanPeringatan(
+      TopSnackbar.tampilkanPeringatan(
         context,
         'Tidak ada lokasi untuk disimpan',
       );
@@ -106,9 +107,9 @@ class _StateHalamanBeranda extends State<HalamanBeranda> {
 
       await PenyimpananLokasi.simpanLokasi(lokasi);
 
-      LayananSnackbarAtas.tampilkanSukses(context, 'Lokasi berhasil disimpan!');
+      TopSnackbar.tampilkanSukses(context, 'Lokasi berhasil disimpan!');
     } catch (e) {
-      LayananSnackbarAtas.tampilkanError(context, 'Error menyimpan lokasi: $e');
+      TopSnackbar.tampilkanError(context, 'Error menyimpan lokasi: $e');
     }
   }
 

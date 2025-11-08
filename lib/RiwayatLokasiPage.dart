@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'models/lokasi_tersimpan.dart';
 import 'services/penyimpanan_lokasi.dart';
-import 'widget/layanan_snackbar_atas.dart';
+import 'widget/top_snackbar.dart';
 
 class riwayatLokasiPage extends StatefulWidget {
   const riwayatLokasiPage({super.key});
@@ -33,7 +33,7 @@ class _StateriwayatLokasiPage extends State<riwayatLokasiPage> {
   Future<void> _hapusLokasi(LokasiTersimpan lokasi) async {
     await PenyimpananLokasi.hapusLokasi(lokasi.id);
     _muatLokasi();
-    LayananSnackbarAtas.tampilkanSukses(context, 'Lokasi berhasil dihapus');
+    TopSnackbar.tampilkanSukses(context, 'Lokasi berhasil dihapus');
   }
 
   @override

@@ -17,7 +17,7 @@ class Myapp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
-      home: const HalamanBeranda(judul: 'MySimple Location'),
+      home: const Homepage(judul: 'MySimple Location'),
     );
   }
 }
