@@ -1,0 +1,416 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:uuid/uuid.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'models/lokasi_tersimpan.dart';
+import 'services/penyimpanan_lokasi.dart';
+import 'widget/layanan_snackbar_atas.dart';
+import 'RiwayatLokasiPage.dart';
+
+class HalamanBeranda extends StatefulWidget {
+  const HalamanBeranda({super.key, required this.judul});
+
+  final String judul;
+
+  @override
+  State<HalamanBeranda> createState() => _StateHalamanBeranda();
+}
+
+class _StateHalamanBeranda extends State<HalamanBeranda> {
+  final MapController _pengontrolPeta = MapController();
+  LatLng? _posisiSaatIni;
+  String _status = 'Mendapatkan lokasi...';
+  bool _sedangMemuat = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ambil lokasi otomatis saat halaman pertama kali dibuka
+    _perbaruiLokasi();
+  }
+
+  Future<void> _perbaruiLokasi() async {
+    setState(() {
+      _sedangMemuat = true;
+      _status = 'Mendapatkan lokasi...';
+    });
+
+    try {
+      // Cek permission
+      LocationPermission izin = await Geolocator.checkPermission();
+      if (izin == LocationPermission.denied) {
+        izin = await Geolocator.requestPermission();
+        if (izin != LocationPermission.whileInUse &&
+            izin != LocationPermission.always) {
+          setState(() => _status = 'Permission denied');
+          return;
+        }
+      }
+
+      // Cek apakah service enabled
+      bool layananDiaktifkan = await Geolocator.isLocationServiceEnabled();
+      if (!layananDiaktifkan) {
+        setState(() => _status = 'Location service disabled');
+        return;
+      }
+
+      // Ambil lokasi sekali
+      Position posisi = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final posisiBaru = LatLng(posisi.latitude, posisi.longitude);
+
+      setState(() {
+        _posisiSaatIni = posisiBaru;
+        _sedangMemuat = false;
+        _status =
+            'Lat: ${posisi.latitude.toStringAsFixed(6)}, Lng: ${posisi.longitude.toStringAsFixed(6)}';
+      });
+
+      // Refresh map - pindahkan kamera ke lokasi baru dan update marker
+      // Tunggu frame berikutnya untuk memastikan state sudah terupdate
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(Duration(milliseconds: 50), () {
+          if (mounted) {
+            _pengontrolPeta.move(posisiBaru, 15.0);
+          }
+        });
+      });
+    } catch (e) {
+      setState(() {
+        _sedangMemuat = false;
+        _status = 'Error: $e';
+      });
+    }
+  }
+
+  Future<void> _simpanLokasi() async {
+    if (_posisiSaatIni == null) {
+      LayananSnackbarAtas.tampilkanPeringatan(
+        context,
+        'Tidak ada lokasi untuk disimpan',
+      );
+      return;
+    }
+
+    try {
+      final lokasi = LokasiTersimpan(
+        id: const Uuid().v4(),
+        latitude: _posisiSaatIni!.latitude,
+        longitude: _posisiSaatIni!.longitude,
+        disimpanPada: DateTime.now(),
+      );
+
+      await PenyimpananLokasi.simpanLokasi(lokasi);
+
+      LayananSnackbarAtas.tampilkanSukses(context, 'Lokasi berhasil disimpan!');
+    } catch (e) {
+      LayananSnackbarAtas.tampilkanError(context, 'Error menyimpan lokasi: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _pengontrolPeta.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFFFFCFCFC),
+      appBar: AppBar(
+        backgroundColor: Color(0xFFFFCFCFC),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          widget.judul,
+          style: TextStyle(
+            color: Color(0xFFEF0000),
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: IconThemeData(color: Color(0xFFEF0000)),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.bookmark, color: Color(0xFFEF0000)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => riwayatLokasiPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Container(
+          color: Color(0xFFFFCFCFC),
+          child: Column(
+            children: [
+              // OSM Map Container
+              Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(left: 16, right: 16, top: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _sedangMemuat && _posisiSaatIni == null
+                        ? Skeletonizer(
+                            enabled: true,
+                            child: Container(
+                              color: Colors.grey.shade200,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 200,
+                                      height: 200,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                    Container(
+                                      width: 150,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : _posisiSaatIni == null
+                        ? Center(
+                            child: Text(
+                              'Mendapatkan lokasi...',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          )
+                        : Skeletonizer(
+                            enabled: _sedangMemuat,
+                            child: FlutterMap(
+                              mapController: _pengontrolPeta,
+                              options: MapOptions(
+                                initialCenter: _posisiSaatIni!,
+                                initialZoom: 15.0,
+                              ),
+                              children: [
+                                // Tile Layer - menggunakan OpenStreetMap France yang lebih permissive
+                                TileLayer(
+                                  urlTemplate:
+                                      'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.app',
+                                  subdomains: ['a', 'b', 'c'],
+                                ),
+
+                                // Marker jika ada lokasi
+                                if (_posisiSaatIni != null)
+                                  MarkerLayer(
+                                    markers: [
+                                      Marker(
+                                        point: _posisiSaatIni!,
+                                        child: Icon(
+                                          Icons.location_pin,
+                                          color: Color(0xFFEF0000),
+                                          size: 40,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+
+              // Status text
+              Padding(
+                padding: EdgeInsets.only(top: 16, left: 16, right: 16),
+                child: Skeletonizer(
+                  enabled: _sedangMemuat,
+                  child: Text(_status, textAlign: TextAlign.center),
+                ),
+              ),
+
+              // Column untuk 3 tombol
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Tombol Lokasi Disimpan
+                    Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFFCFCFC),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => riwayatLokasiPage(),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Riwayat Lokasi',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.normal,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Informasi lengkap riwayat lokasi',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 18,
+                                  color: Colors.grey,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Tombol Dapatkan Lokasi
+                    Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                          gradient: RadialGradient(
+                            radius: 4.0,
+                            stops: [0.08, 1.0],
+                            colors: [Colors.deepOrange.shade400,Color(0xFFEF0000),],
+                            center: Alignment.center,
+                          ),         
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _perbaruiLokasi,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Dapatkan Lokasi',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Tombol Simpan Lokasi
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFFFFFF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Color(0xFFEF0000), width: 1),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _simpanLokasi,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.bookmark,
+                                  color: Color(0xFFEF0000),
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Simpan Lokasi',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFEF0000),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
