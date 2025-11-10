@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:sertikom_aplikasi_lokasi/widget/top_snackbar.dart';
 import 'package:uuid/uuid.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'models/lokasi_tersimpan.dart';
-import 'services/penyimpanan_lokasi.dart';
-import 'widget/top_snackbar.dart';
-import 'RiwayatLokasiPage.dart';
+import '../models/lokasi_tersimpan.dart';
+import '../services/penyimpanan_lokasi.dart';
+import '../widget/top_snackbar.dart';
+import '../screen/RiwayatLokasiPage.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key, required this.judul});
@@ -46,18 +45,28 @@ class _StateHomepage extends State<Homepage> {
         if (izin != LocationPermission.whileInUse &&
             izin != LocationPermission.always) {
           setState(() => _status = 'Permission denied');
+          TopSnackbar.tampilkanPeringatan(
+            context,
+            'Izin lokasi ditolak. Berikan izin untuk melanjutkan.',
+            durasi: const Duration(seconds: 4),
+          );
           return;
         }
       }
 
-      // Cek apakah service enabled
+      // Cek service
       bool layananDiaktifkan = await Geolocator.isLocationServiceEnabled();
       if (!layananDiaktifkan) {
         setState(() => _status = 'Location service disabled');
+        TopSnackbar.tampilkanPeringatan(
+          context,
+          'Layanan lokasi nonaktif. Aktifkan GPS untuk melanjutkan.',
+          durasi: const Duration(seconds: 4),
+        );
         return;
       }
 
-      // Ambil lokasi sekali
+      // Ambil lokasi
       Position posisi = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -71,8 +80,7 @@ class _StateHomepage extends State<Homepage> {
             'Lat: ${posisi.latitude.toStringAsFixed(6)}, Lng: ${posisi.longitude.toStringAsFixed(6)}';
       });
 
-      // Refresh map - pindahkan kamera ke lokasi baru dan update marker
-      // Tunggu frame berikutnya untuk memastikan state sudah terupdate
+      // Refresh map
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(Duration(milliseconds: 50), () {
           if (mounted) {
@@ -85,6 +93,11 @@ class _StateHomepage extends State<Homepage> {
         _sedangMemuat = false;
         _status = 'Error: $e';
       });
+      TopSnackbar.tampilkanError(
+        context,
+        'Gagal mendapatkan lokasi: $e',
+        durasi: const Duration(seconds: 4),
+      );
     }
   }
 
@@ -142,9 +155,7 @@ class _StateHomepage extends State<Homepage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => riwayatLokasiPage(),
-                ),
+                MaterialPageRoute(builder: (context) => riwayatLokasiPage()),
               );
             },
           ),
@@ -174,15 +185,14 @@ class _StateHomepage extends State<Homepage> {
                                 initialZoom: 15.0,
                               ),
                               children: [
-                                // Tile Layer - menggunakan OpenStreetMap France yang lebih permissive
+                                // Tile Layer OpenStreetMap 
                                 TileLayer(
                                   urlTemplate:
                                       'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
                                   userAgentPackageName: 'com.example.app',
                                   subdomains: ['a', 'b', 'c'],
                                 ),
-
-                                // Marker jika ada lokasi
+                                // Marker
                                 MarkerLayer(
                                   markers: [
                                     Marker(
@@ -300,12 +310,15 @@ class _StateHomepage extends State<Homepage> {
                       margin: EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                          gradient: RadialGradient(
-                            radius: 4.0,
-                            stops: [0.08, 1.0],
-                            colors: [Colors.deepOrange.shade400,Color(0xFFEF0000),],
-                            center: Alignment.center,
-                          ),         
+                        gradient: RadialGradient(
+                          radius: 4.0,
+                          stops: [0.08, 1.0],
+                          colors: [
+                            Colors.deepOrange.shade400,
+                            Color(0xFFEF0000),
+                          ],
+                          center: Alignment.center,
+                        ),
                       ),
                       child: Material(
                         color: Colors.transparent,

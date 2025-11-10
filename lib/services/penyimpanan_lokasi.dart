@@ -19,7 +19,7 @@ class PenyimpananLokasi {
     return ambilLokasiTersimpanSinkron(prefs);
   }
 
-  // Ambil lokasi tersimpan (sync version untuk internal use)
+  // Ambil lokasi tersimpan
   static List<LokasiTersimpan> ambilLokasiTersimpanSinkron(
     SharedPreferences prefs,
   ) {

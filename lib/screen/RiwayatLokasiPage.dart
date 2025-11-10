@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'models/lokasi_tersimpan.dart';
-import 'services/penyimpanan_lokasi.dart';
-import 'widget/top_snackbar.dart';
+import '../models/lokasi_tersimpan.dart';
+import '../services/penyimpanan_lokasi.dart';
+import '../widget/top_snackbar.dart';
 
 class riwayatLokasiPage extends StatefulWidget {
   const riwayatLokasiPage({super.key});
@@ -104,7 +104,7 @@ class _StateriwayatLokasiPage extends State<riwayatLokasiPage> {
                                 gradient: RadialGradient(
                                   radius: 4.0,
                                   stops: [0.0, 1.0],
-                                  colors: [Colors.deepOrange.shade600,Color(0xFFEF0000),],
+                                  colors: [Colors.red.shade600,Color(0xFFEF0000),],
                                   center: Alignment.center,
                                 ), 
                                 borderRadius: BorderRadius.circular(12),
