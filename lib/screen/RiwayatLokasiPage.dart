@@ -110,7 +110,7 @@ class _StateriwayatLokasiPage extends State<riwayatLokasiPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.blue.withOpacity(0.3),
+                                    color: Colors.orange.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: Offset(0, 4),
                                   ),
